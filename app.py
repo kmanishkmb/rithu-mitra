@@ -2,7 +2,7 @@ import streamlit as st
 from google import genai
 from PIL import Image
 
-MY_KEY = st.secrets["AQ.Ab8RN6Lx_5CAnvjVmps3-Wb2CrAivgNXloweTrLJcO2wz_LefQ"]
+MY_KEY = st.secrets["GOOGLE_API_KEY"]
 client = genai.Client(api_key=MY_KEY)
 
 st.set_page_config(page_title="Rithu Mitra 2.0", page_icon="🌾")
