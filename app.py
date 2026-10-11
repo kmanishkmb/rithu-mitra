@@ -1,32 +1,32 @@
 import streamlit as st
 import requests
-import json
 
 st.title("Rithu Mitra - Finally Working!")
 
-API_KEY = st.secrets["GOOGLE_API_KEY"]
+API_KEY = st.secrets["GOOGLE_API_KEY"].strip()
 
-q = st.text_input("Em adagali? Nenu ready!")
+q = st.text_input("Em adagali?")
 
 if st.button("Adugu"):
     if q:
         with st.spinner("Alocistunna..."):
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
+            headers = {
+                "x-goog-api-key": API_KEY,
+                "Content-Type": "application/json"
+            }
 
             data = {
                 "contents": [{"parts": [{"text": q}]}]
             }
 
-            try:
-                response = requests.post(url, json=data, timeout=30)
-                result = response.json()
+            r = requests.post(url, headers=headers, json=data)
+            res = r.json()
 
-                if "candidates" in result:
-                    answer = result["candidates"][0]["content"]["parts"][0]["text"]
-                    st.success(answer)
-                else:
-                    st.error(f"API Error: {result}")
-            except Exception as e:
-                st.error(f"Error: {e}")
+            if "candidates" in res:
+                st.success(res["candidates"][0]["content"]["parts"][0]["text"])
+            else:
+                st.error(f"Error: {res}")
     else:
         st.warning("Question type chey")
