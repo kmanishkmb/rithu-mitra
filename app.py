@@ -3,96 +3,79 @@ from groq import Groq
 import base64, random, io
 from PIL import Image
 
-st.set_page_config(page_title="Rithu Mitra UNLIMITED", page_icon="🌾", layout="centered")
+st.set_page_config(page_title="Rithu Mitra UNLIMITED", page_icon="🌾")
 
-# --- STYLE - Vercel laga kanipinchadaniki ---
-st.markdown("""
-<style>
-.stButton>button {background: #16a34a; color: white; border-radius: 12px; width: 100%; padding: 12px; font-weight: bold;}
-.stApp {background: #FFF8E7;}
-</style>
-""", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;'>🌾 Rithu Mitra</h1><p style='text-align:center;'>Telugu + Photo = Magic</p>", unsafe_allow_html=True)
 
-st.title("🌾 Rithu Mitra - UNLIMITED")
-st.caption("Photo + Voice - Telugu lo")
-
-# --- KEYS ROTATION ---
 try:
-    KEYS = st.secrets["GROQ_KEYS"] # 2-3 keys pettu secrets lo
+    KEYS = st.secrets["GROQ_KEYS"]
 except:
-    KEYS = [st.secrets["GROQ_API_KEY"]]
+    KEYS = [st.secrets.get("GROQ_API_KEY")]
 
-def get_client():
-    return Groq(api_key=random.choice(KEYS))
-
-def compress(b):
-    img = Image.open(b)
+def client(): return Groq(api_key=random.choice(KEYS))
+def to_b64(file):
+    img = Image.open(file)
     img.thumbnail((512,512))
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=60)
     return base64.b64encode(buf.getvalue()).decode()
 
-lang = st.selectbox("Bhasha", ["Telugu", "English", "Hindi"])
+lang = st.selectbox("Bhasha", ["Telugu","English","Hindi"])
 
-tab1, tab2 = st.tabs(["📸 Photo Doctor", "🎙️ Voice + Photo MAGIC"])
+# --- DIFFERENT TABS WITH DIFFERENT KEYS ---
+t1, t2 = st.tabs(["📸 ONLY PHOTO", "🎙️ PHOTO + VOICE"])
 
-with tab1:
-    photo = st.file_uploader("Panta photo pettandi", type=["jpg","jpeg","png"], key="p1")
-    if photo:
-        st.image(photo, width=300)
-        if st.button("Rogam Chudali 🔍", key="b1"):
-            for _ in range(len(KEYS)):
-                try:
-                    client = get_client()
-                    b64 = compress(photo)
-                    with st.spinner(f"{lang} lo chustunna..."):
-                        res = client.chat.completions.create(
-                            model="qwen/qwen3.8-27b",
-                            messages=[{"role":"user","content":[
-                                {"type":"text","text":f"You are farm doctor. Answer ONLY in {lang}. Disease, Cause, Mandu, Prevention simple."},
-                                {"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{b64}"}}
-                            ]}]
-                        )
-                    st.success(res.choices[0].message.content)
-                    st.balloons()
-                    break
-                except Exception as e:
-                    if "RateLimit" in str(e) or "429" in str(e):
-                        continue
-                    else:
-                        st.error(str(e))
-                        break
-            else:
-                st.warning("⏳ Anni servers busy - 1 min aagi try cheyandi")
+with t1:
+    st.subheader("Photo pettandi - Nene cheptha")
+    f1 = st.file_uploader("Photo upload", type=["jpg","png","jpeg"], key="only_photo")
+    if f1:
+        st.image(f1, width=250)
+        if st.button("🔍 Rogam Enti?", key="btn_photo_only"):
+            try:
+                b64 = to_b64(f1)
+                c = client()
+                ans = c.chat.completions.create(
+                    model="llama-3.2-90b-vision-preview",
+                    messages=[{"role":"user","content":[
+                        {"type":"text","text":f"Identify crop disease from photo. Answer in {lang}. Give Disease, Reason, Mandu."},
+                        {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{b64}"}}
+                    ]}]
+                )
+                st.success(ans.choices[0].message.content)
+            except Exception as e:
+                st.error(f"Error: {e}")
 
-with tab2:
-    st.write("Photo petti mic lo adagandi!")
-    p2 = st.file_uploader("Photo", type=["jpg","jpeg","png"], key="p2")
-    audio = st.audio_input("Mic nokki adagandi", key="a2")
+with t2:
+    st.subheader("Photo + Voice Magic")
+    f2 = st.file_uploader("Photo upload", type=["jpg","png","jpeg"], key="photo_voice")
+    aud = st.audio_input("Meeru adagandi", key="voice_input")
     q = ""
-    if audio:
+    if aud:
         try:
-            c = get_client()
-            tr = c.audio.transcriptions.create(file=(audio.name, audio.getvalue()), model="whisper-large-v3")
+            c2 = client()
+            tr = c2.audio.transcriptions.create(file=(aud.name, aud.getvalue()), model="whisper-large-v3")
             q = tr.text
-            st.info(f"Meerannadi: {q}")
-        except:
-            pass
-    q_text = st.text_input("Leda type cheyandi", value=q)
-    if st.button("🔥 Magic Answer", key="b2"):
-        if p2 and q_text:
-            for _ in range(len(KEYS)):
-                try:
-                    c = get_client()
-                    b64 = compress(p2)
-                    with st.spinner("Magic..."):
-                        res = c.chat.completions.create(model="qwen/qwen3.8-27b", messages=[{"role":"user","content":[{"type":"text","text":f"Q:{q_text} Answer in {lang} simple."},{"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{b64}"}}]}])
-                    st.success(res.choices[0].message.content)
-                    break
-                except:
-                    continue
-        else:
-            st.warning("Photo + Question pettandi")
+            st.info(f"Vinnadi: {q}")
+        except Exception as e:
+            st.warning("Voice vinadam lo error, type cheyandi")
 
-st.divider()
-st.markdown("**Made by Manish for Bharat Farmers 🇮🇳** | Streamlit Version - Always Free")
+    q_input = st.text_input("Question", value=q, key="q_text_voice")
+
+    if st.button("✨ Magic Answer", key="btn_voice_magic"):
+        if f2 and q_input:
+            try:
+                b64 = to_b64(f2)
+                c = client()
+                ans = c.chat.completions.create(
+                    model="llama-3.2-90b-vision-preview",
+                    messages=[{"role":"user","content":[
+                        {"type":"text","text":f"Farmer asks: {q_input}. Photo chusi {lang} lo samadhanam cheppu."},
+                        {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{b64}"}}
+                    ]}]
+                )
+                st.success(ans.choices[0].message.content)
+                st.balloons()
+            except Exception as e:
+                st.error(str(e))
+        else:
+            st.warning("Photo + Question rendu kavali")
