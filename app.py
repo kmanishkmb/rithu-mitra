@@ -1,94 +1,98 @@
 import streamlit as st
 from groq import Groq
-import base64
+import base64, random, io
 from PIL import Image
-import io
 
-st.set_page_config(page_title="Rithu Mitra PRO MAX", page_icon="🚀")
-st.title("🚀 Rithu Mitra PRO MAX")
+st.set_page_config(page_title="Rithu Mitra UNLIMITED", page_icon="🌾", layout="centered")
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-lang = st.selectbox("Bhasha:", ["Telugu", "English", "Hindi", "Hinglish"])
+# --- STYLE - Vercel laga kanipinchadaniki ---
+st.markdown("""
+<style>
+.stButton>button {background: #16a34a; color: white; border-radius: 12px; width: 100%; padding: 12px; font-weight: bold;}
+.stApp {background: #FFF8E7;}
+</style>
+""", unsafe_allow_html=True)
 
-def compress_image(uploaded_file):
-    # Photo ni 512x512 ki compress chestunna - token save avuthadi
-    img = Image.open(uploaded_file)
-    img.thumbnail((512, 512))
+st.title("🌾 Rithu Mitra - UNLIMITED")
+st.caption("Photo + Voice - Telugu lo")
+
+# --- KEYS ROTATION ---
+try:
+    KEYS = st.secrets["GROQ_KEYS"] # 2-3 keys pettu secrets lo
+except:
+    KEYS = [st.secrets["GROQ_API_KEY"]]
+
+def get_client():
+    return Groq(api_key=random.choice(KEYS))
+
+def compress(b):
+    img = Image.open(b)
+    img.thumbnail((512,512))
     buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=70)
-    return base64.b64encode(buf.getvalue()).decode('utf-8')
+    img.save(buf, format="JPEG", quality=60)
+    return base64.b64encode(buf.getvalue()).decode()
 
-tab1, tab2, tab3 = st.tabs(["🎙️ Voice", "📸 Photo", "🔥 Magic"])
+lang = st.selectbox("Bhasha", ["Telugu", "English", "Hindi"])
+
+tab1, tab2 = st.tabs(["📸 Photo Doctor", "🎙️ Voice + Photo MAGIC"])
 
 with tab1:
-    audio = st.audio_input("Voice tho adagandi...", key="a1")
-    transcribed = ""
-    if audio:
-        try:
-            tr = client.audio.transcriptions.create(file=(audio.name, audio.getvalue()), model="whisper-large-v3")
-            transcribed = tr.text
-            st.info(f"Meerannadi: {transcribed}")
-        except Exception as e:
-            if "RateLimit" in str(e):
-                st.warning("⏳ Konchem aagi 1 min tarwata try cheyandi - Groq limit ayindi")
-            else:
-                st.error(e)
-
-    q = st.text_input("Prashna:", value=transcribed, key="q1")
-    if st.button("Answer Kavali 🌾", key="b1"):
-        if q:
-            try:
-                chat = client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role":"system","content": f"ALWAYS in {lang}"},{"role":"user","content": q}])
-                st.success(chat.choices[0].message.content)
-            except Exception as e:
-                if "RateLimit" in str(type(e)) or "429" in str(e):
-                    st.warning(f"⏳ Groq free limit ayindi Manish. 1-2 nimishalu aagi malli nokkandi. {lang} lo.")
-                else:
-                    st.error(e)
-
-with tab2:
-    photo = st.file_uploader("Panta photo", type=["jpg","jpeg","png"], key="p2")
+    photo = st.file_uploader("Panta photo pettandi", type=["jpg","jpeg","png"], key="p1")
     if photo:
         st.image(photo, width=300)
-        if st.button("Rogam Check 🔍", key="b2"):
-            with st.spinner(f"{lang} lo chustunna..."):
+        if st.button("Rogam Chudali 🔍", key="b1"):
+            for _ in range(len(KEYS)):
                 try:
-                    b64 = compress_image(photo)
-                    chat = client.chat.completions.create(
-                        model="qwen/qwen3.8-27b",
-                        messages=[{"role":"user","content": [{"type":"text","text": f"Disease doctor. Answer in {lang}: Disease, Cause, Mandu, Prevention."},{"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{b64}"}}]}]
-                    )
-                    st.success(chat.choices[0].message.content)
+                    client = get_client()
+                    b64 = compress(photo)
+                    with st.spinner(f"{lang} lo chustunna..."):
+                        res = client.chat.completions.create(
+                            model="qwen/qwen3.8-27b",
+                            messages=[{"role":"user","content":[
+                                {"type":"text","text":f"You are farm doctor. Answer ONLY in {lang}. Disease, Cause, Mandu, Prevention simple."},
+                                {"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{b64}"}}
+                            ]}]
+                        )
+                    st.success(res.choices[0].message.content)
+                    st.balloons()
+                    break
                 except Exception as e:
-                    if "RateLimit" in str(type(e).__name__) or "rate_limit" in str(e).lower() or "429" in str(e):
-                        st.error("🚨 Groq Free Limit Ayindi!")
-                        st.warning("""
-                        **Fix:**
-                        1. 2 nimishalu aagi malli try cheyandi
-                        2. Leda inkoka Groq API key create chesi secrets lo 2nd key pettandi
-                        3. Roju ki 15 photos mathrame free - repu malli vastadi
-                        """)
+                    if "RateLimit" in str(e) or "429" in str(e):
+                        continue
                     else:
-                        st.error(f"Error: {e}")
+                        st.error(str(e))
+                        break
+            else:
+                st.warning("⏳ Anni servers busy - 1 min aagi try cheyandi")
 
-with tab3:
-    st.subheader("Voice + Photo Magic")
-    magic_photo = st.file_uploader("1. Photo", type=["jpg","jpeg","png"], key="magic_p")
-    magic_audio = st.audio_input("2. Voice Q", key="magic_a")
-    magic_trans = ""
-    if magic_audio:
-        tr = client.audio.transcriptions.create(file=(magic_audio.name, magic_audio.getvalue()), model="whisper-large-v3")
-        magic_trans = tr.text
-        st.success(f"Q: {magic_trans}")
-    magic_q = st.text_input("Question:", value=magic_trans, key="magic_q")
-    if st.button("🔥 Magic Answer!", key="magic_b"):
-        if magic_photo and magic_q:
-            try:
-                b64 = compress_image(magic_photo)
-                chat = client.chat.completions.create(model="qwen/qwen3.8-27b", messages=[{"role":"user","content": [{"type":"text","text": f"Q: {magic_q}. Answer in {lang}. Simple."},{"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{b64}"}}]}])
-                st.balloons()
-                st.success(chat.choices[0].message.content)
-            except Exception as e:
-                st.warning("⏳ Limit ayindi - 1 min aagi try cheyandi Manish!")
+with tab2:
+    st.write("Photo petti mic lo adagandi!")
+    p2 = st.file_uploader("Photo", type=["jpg","jpeg","png"], key="p2")
+    audio = st.audio_input("Mic nokki adagandi", key="a2")
+    q = ""
+    if audio:
+        try:
+            c = get_client()
+            tr = c.audio.transcriptions.create(file=(audio.name, audio.getvalue()), model="whisper-large-v3")
+            q = tr.text
+            st.info(f"Meerannadi: {q}")
+        except:
+            pass
+    q_text = st.text_input("Leda type cheyandi", value=q)
+    if st.button("🔥 Magic Answer", key="b2"):
+        if p2 and q_text:
+            for _ in range(len(KEYS)):
+                try:
+                    c = get_client()
+                    b64 = compress(p2)
+                    with st.spinner("Magic..."):
+                        res = c.chat.completions.create(model="qwen/qwen3.8-27b", messages=[{"role":"user","content":[{"type":"text","text":f"Q:{q_text} Answer in {lang} simple."},{"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{b64}"}}]}])
+                    st.success(res.choices[0].message.content)
+                    break
+                except:
+                    continue
+        else:
+            st.warning("Photo + Question pettandi")
 
-st.caption("Tip: RateLimit vasthe 2 min aagandi - auto fix avuthadi")
+st.divider()
+st.markdown("**Made by Manish for Bharat Farmers 🇮🇳** | Streamlit Version - Always Free")
