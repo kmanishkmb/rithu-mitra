@@ -1,57 +1,80 @@
 import streamlit as st
 from groq import Groq
+import base64
 
-st.set_page_config(page_title="Rithu Mitra Voice", page_icon="🎙️")
-st.title("🌾 Rithu Mitra - VOICE 🎙️")
+st.set_page_config(page_title="Rithu Mitra PRO", page_icon="🌾")
+st.title("🌾 Rithu Mitra PRO - Voice + Photo Doctor")
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 lang = st.selectbox("Bhasha / Language:", ["Telugu", "English", "Hindi", "Hinglish (Telugu + English)"])
 
-st.divider()
+tab1, tab2 = st.tabs(["🎙️ Voice / Text Prashna", "📸 Photo tho Rogam Check"])
 
-# --- VOICE INPUT ---
-st.subheader("🎙️ Voice tho Adagandi")
-audio = st.audio_input("Mic nokki matladandi...")
-
-transcribed_text = ""
-if audio:
-    with st.spinner("Vinipistunna... Text ga marchutunna..."):
-        try:
-            # Groq Whisper tho voice ni text ga marchadam
-            transcription = client.audio.transcriptions.create(
-                file=(audio.name, audio.getvalue()),
-                model="whisper-large-v3",
-                language="te" if lang=="Telugu" else "en" # Auto detect better
-            )
-            transcribed_text = transcription.text
-            st.info(f"Meerannadi: **{transcribed_text}**")
-        except Exception as e:
-            st.error(f"Voice Error: {e}")
-
-# --- TEXT INPUT ALSO ---
-q_text = st.text_input("Leda ikkada type cheyandi:", value=transcribed_text, placeholder="Ex: Wari ki ye eruvulu?")
-
-if st.button(f"Samadhanam Kavali - {lang} lo 🌾"):
-    final_q = q_text or transcribed_text
-    if final_q:
-        with st.spinner(f"{lang} lo cheptunna..."):
+# TAB 1 - VOICE & TEXT
+with tab1:
+    audio = st.audio_input("Voice tho adagandi...")
+    transcribed = ""
+    if audio:
+        with st.spinner("Text ga marchutunna..."):
             try:
-                system_prompt = f"You are Rithu Mitra, farming expert. ALWAYS answer in {lang}. Simple words for farmers. If Hinglish, use Telugu in English letters."
-
-                chat = client.chat.completions.create(
-                    model="openai/gpt-oss-20b",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": final_q}
-                    ]
-                )
-                st.success(chat.choices[0].message.content)
-                # Optional: Text to speech kuda cheyochu tarwata
+                tr = client.audio.transcriptions.create(file=(audio.name, audio.getvalue()), model="whisper-large-v3")
+                transcribed = tr.text
+                st.info(f"Meerannadi: {transcribed}")
             except Exception as e:
-                st.error(f"Error: {e}")
-    else:
-        st.warning("Mundu matladandi leda type cheyandi!")
+                st.error(e)
+
+    q = st.text_input("Prashna:", value=transcribed, key="q1")
+
+    if st.button("Answer Kavali 🌾", key="b1"):
+        if q:
+            with st.spinner(f"{lang} lo..."):
+                sys = f"You are Rithu Mitra farming expert. ALWAYS reply in {lang}. Simple words."
+                chat = client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role":"system","content":sys},{"role":"user","content":q}])
+                st.success(chat.choices[0].message.content)
+
+# TAB 2 - PHOTO DISEASE
+with tab2:
+    st.subheader("Panta photo upload cheyandi")
+    photo = st.file_uploader("Aaku / Panta photo", type=["jpg","jpeg","png"])
+
+    if photo:
+        st.image(photo, caption="Me Panta Photo", width=300)
+        if st.button("Rogam Enti Check Chey 🔍"):
+            with st.spinner("Doctor chustunnadu..."):
+                try:
+                    # Photo ni base64 ga marchali
+                    b64 = base64.b64encode(photo.getvalue()).decode('utf-8')
+
+                    sys = f"You are an expert crop disease doctor. ALWAYS answer in {lang}. Look at the crop image and tell: 1. Disease name 2. Cause 3. Solution / Mandu 4. Prevention. Use simple {lang}."
+
+                    chat = client.chat.completions.create(
+                        model="meta-llama/llama-4-scout-17b-16e-instruct",
+                        messages=[
+                            {"role": "system", "content": sys},
+                            {"role": "user", "content": [
+                                {"type": "text", "text": "Ee panta ki em aindi? Rogam cheppu."},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+                            ]}
+                        ]
+                    )
+                    st.success(chat.choices[0].message.content)
+                except Exception as e:
+                    st.error(f"Photo Error: {e}. Try with another model: llama-3.2-11b-vision-preview")
+                    # Fallback
+                    try:
+                        chat = client.chat.completions.create(
+                            model="llama-3.2-11b-vision-preview",
+                            messages=[
+                                {"role": "user", "content": [
+                                    {"type": "text", "text": f"Check crop disease and explain in {lang}"},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+                                ]}
+                            ]
+                        )
+                        st.success(chat.choices[0].message.content)
+                    except Exception as e2:
+                        st.error(f"Final Error: {e2}")
 
 st.divider()
-st.markdown("Made with ❤️ by Manish | Voice Powered by Groq")
+st.markdown("**Rithu Mitra PRO by Manish - For Our Farmers ❤️**")
