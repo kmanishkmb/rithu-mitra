@@ -5,67 +5,88 @@ from PIL import Image
 
 st.set_page_config(page_title="Rithu Mitra", page_icon="🌾")
 
-# BLUE BACKGROUND - Force chestunna
+# BLUE - strong force
 st.markdown("""
 <style>
-.stApp { background-color: #E3F2FD!important; }
-[data-testid="stHeader"] { background-color: #E3F2FD!important; }
+.stApp { background: #E3F2FD!important; }
+header { background: #E3F2FD!important; }
 h1 { color: #0D47A1!important; }
-.stButton>button { background-color: #1976D2!important; color: white!important; border-radius: 12px; width: 100%; font-weight: bold; }
+div.stButton > button { background: #1976D2!important; color: white!important; border-radius: 12px!important; height: 50px!important; font-weight: bold!important; }
 </style>
 """, unsafe_allow_html=True)
 
 st.title("🌾 Rithu Mitra 💙")
-st.write("Telugu lo Raitula Mitra")
 
 try:
     KEYS = st.secrets["GROQ_KEYS"]
 except:
     KEYS = [st.secrets.get("GROQ_API_KEY")]
 
-def client(): return Groq(api_key=random.choice(KEYS))
-def to_b64(f):
-    img = Image.open(f)
-    img.thumbnail((600,600))
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=70)
-    return base64.b64encode(buf.getvalue()).decode()
+def get_client(): return Groq(api_key=random.choice(KEYS))
 
-# WORKING MODELS - try one by one
-MODELS = ["meta-llama/llama-4-scout-17b-16e-instruct", "qwen/qwen3-32b", "llama-3.2-90b-vision-preview"]
+def img_to_b64(f):
+    im = Image.open(f)
+    im.thumbnail((512,512))
+    b = io.BytesIO()
+    im.save(b, format="JPEG", quality=60)
+    return base64.b64encode(b.getvalue()).decode()
 
-def ask_groq(prompt, b64):
-    for m in MODELS:
-        try:
-            c = client()
-            r = c.chat.completions.create(
-                model=m,
-                messages=[{"role":"user","content":[
-                    {"type":"text","text":prompt},
-                    {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{b64}"}}
-                ]}]
-            )
-            return r.choices[0].message.content + f"\n\n_(model: {m})_"
-        except Exception as e:
-            continue
-    return "Model error - Groq anni models busy, 1 min tarvata try chey"
+# GROQ OFFICIAL VISION MODELS 2026
+VISION_MODEL = "qwen/qwen3-32b" # idhe ippudu working
 
-lang = st.selectbox("Bhasha", ["Telugu","English"])
+st.info(f"Model: {VISION_MODEL} | Keys: {len(KEYS)}")
 
 t1, t2 = st.tabs(["📸 Photo", "🎙️ Voice"])
 
 with t1:
-    f1 = st.file_uploader("Photo pettu", type=["jpg","png","jpeg"], key="f1")
-    if f1:
-        st.image(f1, width=300)
+    f = st.file_uploader("Photo", type=["jpg","png","jpeg"], key="f1")
+    if f:
+        st.image(f, width=300)
         if st.button("Rogam Enti? 🔍", key="b1"):
-            with st.spinner("Chustunna..."):
-                st.success(ask_groq(f"Identify crop disease, answer in {lang}. Disease, Reason, Mandu cheppu.", to_b64(f1)))
+            try:
+                c = get_client()
+                b64 = img_to_b64(f)
+                # QWEN ki special prompt
+                resp = c.chat.completions.create(
+                    model=VISION_MODEL,
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "You are crop doctor. Identify disease from leaf photo. Answer in Telugu simple. Format: Rogam:, Karanam:, Mandu: "},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+                        ]
+                    }],
+                    max_tokens=1000
+                )
+                ans = resp.choices[0].message.content
+                # Qwen thinking tag teesesey
+                if "</think>" in ans:
+                    ans = ans.split("</think>")[-1]
+                st.success(ans)
+                st.balloons()
+            except Exception as e:
+                st.error(f"Real Error: {e}")
+                st.write("Keys check chey - Groq console lo Qwen enabled na?")
 
 with t2:
     f2 = st.file_uploader("Photo", type=["jpg","png","jpeg"], key="f2")
-    q = st.text_input("Question: mandhu cheppu", key="q1")
+    q = st.text_input("Prashna: mandhu cheppu", key="q2")
     if st.button("Magic ✨", key="b2"):
-        if f2 and q:
-            with st.spinner("..."):
-                st.success(ask_groq(f"Farmer asks: {q}. Photo chusi {lang} lo cheppu.", to_b64(f2)))
+        if f2:
+            try:
+                c = get_client()
+                b64 = img_to_b64(f2)
+                resp = c.chat.completions.create(
+                    model=VISION_MODEL,
+                    messages=[{"role":"user","content":[
+                        {"type":"text","text": f"Q: {q}. Photo chusi Telugu lo cheppu."},
+                        {"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{b64}"}}
+                    ]}],
+                    max_tokens=1000
+                )
+                ans = resp.choices[0].message.content
+                if "</think>" in ans:
+                    ans = ans.split("</think>")[-1]
+                st.success(ans)
+            except Exception as e:
+                st.error(f"Real Error: {e}")
