@@ -1,23 +1,12 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
-st.title("My Gemini App")
-st.write("App is running!")
+st.title("Rithu Mitra")
 
-# API Key load
-try:
-    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    
-    prompt = st.text_input("Em adagali?")
-    
-    if st.button("Ask Gemini"):
-        if prompt:
-            with st.spinner("Thinking..."):
-                response = model.generate_content(prompt)
-                st.success(response.text)
-        else:
-            st.warning("Okati type chey Manish!")
-            
-except Exception as e:
-    st.error(f"Error: {e}")
+client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
+
+q = st.text_input("Em adagali?")
+if st.button("Adugu"):
+    if q:
+        res = client.models.generate_content(model="gemini-2.0-flash", contents=q)
+        st.write(res.text)
