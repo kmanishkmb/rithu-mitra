@@ -2,7 +2,8 @@ import streamlit as st
 from groq import Groq
 import base64, random, io
 from PIL import Image
-
+from PIL import Image
+import requests
 st.set_page_config(page_title="Rithu Mitra", page_icon="🌾", layout="centered")
 
 # BLUE THEME - FINAL
