@@ -5,7 +5,11 @@ import time
 from groq import Groq
 
 st.set_page_config(page_title="Rithu Mitra - Final", page_icon="🌾", layout="wide")
+# OLD:
+st.markdown(f"<h1>🌾 Rithu Mitra...
 
+# NEW - Idi marchu:
+st.markdown(f"<h1>🌾 Raithu Mitra - Bharat Pulse</h1>...
 # --- GROQ CLIENT ---
 def get_groq_client():
     keys = []
