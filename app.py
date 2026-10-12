@@ -3,7 +3,18 @@ from groq import Groq
 import base64, random, io
 from PIL import Image
 from PIL import Image
-import requests
+import requests+get_weather function
+
+def get_weather(city="Guntur"):
+    try:
+        r = requests.get(f"https://wttr.in/{city}?format=j1", timeout=5)
+        data = r.json()
+        temp = data['current_condition'][0]['temp_C']
+        return f"{city} - {temp}°C"
+    except:
+        return f"{city} weather loading..."
+
+st.set_page_config(
 st.set_page_config(page_title="Rithu Mitra", page_icon="🌾", layout="centered")
 
 # BLUE THEME - FINAL
@@ -38,7 +49,11 @@ def to_b64(f):
     return base64.b64encode(buf.getvalue()).decode()
 
 MODEL = "qwen/qwen3.8-27b"
+# 🌤️ All India Weather
+city = st.selectbox("Meeru ekkada unnaru? / Your City",
+    ["Guntur, AP", "Warangal", "Hyderabad", "Delhi", "Mumbai", "Bangalore"])
 
+st.info(f"🌤️ {get_weather(city)}")
 lang = st.selectbox("🌐 Bhasha / Language", ["Telugu","English","Hindi"], index=0)
 
 t1, t2 = st.tabs(["📸 Photo Doctor", "🎙️ Voice + Photo"])
@@ -121,4 +136,4 @@ with t2:
             st.warning("Photo + Question rendu pettu Manish!")
 
 st.divider()
-st.markdown("<center>💙 Made for Telangana Farmers | Rithu Mitra</center>", unsafe_allow_html=True)
+st.markdown("<center>💙 Made for Indian Farmers | Rithu Mitra</center>", unsafe_allow_html=True)
