@@ -54,6 +54,7 @@ city = st.selectbox("Meeru ekkada unnaru? / Your City",
     ["Guntur, AP", "Warangal", "Hyderabad", "Delhi", "Mumbai", "Bangalore"])
 
 st.info(f"🌤️ {get_weather(city)}")
+City dropdown + st.info
 lang = st.selectbox("🌐 Bhasha / Language", ["Telugu","English","Hindi"], index=0)
 
 t1, t2 = st.tabs(["📸 Photo Doctor", "🎙️ Voice + Photo"])
