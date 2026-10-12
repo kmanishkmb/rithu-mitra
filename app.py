@@ -4,9 +4,8 @@ import random
 import time
 from groq import Groq
 
-st.set_page_config(page_title="Rithu Mitra - Final", page_icon="🌾", layout="wide")
+st.set_page_config(page_title="Raithu Mitra - Final", page_icon="🌾", layout="wide")
 
-st.markdown(f"<h1>🌾 Raithu Mitra - Bharat Pulse</h1>...
 # --- GROQ CLIENT ---
 def get_groq_client():
     keys = []
@@ -34,7 +33,7 @@ def ask_groq(prompt):
         )
         return chat.choices[0].message.content
     except Exception as e:
-        return f"🌾 Rythu Mitra Salaha: Market lo demand ekkuva undi, ippudu manchi dhara vastondi! Error: {e}"
+        return f"Raithu Mitra Salaha: Market lo demand ekkuva undi, ippudu manchi dhara vastondi! {e}"
 
 # --- EPPUDU AMMALI LOGIC ---
 def get_sell_advice(modal, min_p, max_p):
@@ -70,8 +69,9 @@ def get_real_mandi_price(crop, state):
             continue
     return None, "Govt server busy"
 
-# --- HEADER ---
-st.markdown(f"<h1 style='text-align:center'>🌾 Rithu Mitra - Bharat Pulse</h1><p style='text-align:center'>{total_keys} Keys | Demo + Real Mode | Viksit Bharat 2047</p><hr>", unsafe_allow_html=True)
+# --- HEADER - BUG FIXED - NO EMOJI IN F-STRING ---
+st.markdown("<h1 style='text-align:center'>Raithu Mitra - Bharat Pulse</h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center'>{total_keys} Keys | Demo + Real Mode | Viksit Bharat 2047</p><hr>", unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -126,7 +126,6 @@ with tab1:
                 for rec in records[:3]:
                     st.write(f"**{rec.get('market','N/A')}** | Min: {rec.get('min_price')} | Max: {rec.get('max_price')} | Modal: {rec.get('modal_price')} | Date: {rec.get('arrival_date')}")
 
-                # Eppudu Ammali Logic for LIVE
                 try:
                     r0 = records[0]
                     modal_price = float(str(r0.get('modal_price','0')).replace(',',''))
@@ -142,11 +141,10 @@ with tab1:
                 fake_real = {"market": f"{village} Mandi", "modal_price": random.randint(3200,4000), "min_price": 2000, "max_price": 4500, "arrival_date": "2026-10-11"}
                 st.metric(f"{fake_real['market']} (Cached Real)", f"Rs.{fake_real['modal_price']}/Quintal", "Govt Agmarknet - Yesterday")
 
-                # Eppudu Ammali Logic for CACHED
                 sell_signal = get_sell_advice(fake_real['modal_price'], fake_real['min_price'], fake_real['max_price'])
                 st.subheader(f"AI Decision: {sell_signal}")
                 prompt = f"You are Srikakulam Rythu Expert. Govt Data: Crop {crop}, Modal Rs.{fake_real['modal_price']}, Min {fake_real['min_price']}, Max {fake_real['max_price']}, Market {village}. Decision {sell_signal}. Tell farmer in PURE Telugu - Eppudu Ammali? Ippude ammala? Agala? 2 lines reason - demand/supply."
-                st.info(ask_groq(prompt))
+                st.success(ask_groq(prompt))
                 st.caption("Note: Live API blocks cloud IP sometimes - Production AWS lo 100% live")
 
 with tab2:
@@ -156,4 +154,4 @@ with tab2:
         st.image(f, width=300)
         st.success("Diagnosis: Leaf Curl - Neem Oil vadali - 10ml per litre")
 
-st.caption("Demo + Real | Unlimited Keys | Viksit Bharat 2047 | Team Rithu Mitra")
+st.caption("Demo + Real | Unlimited Keys | Viksit Bharat 2047 | Team Raithu Mitra")
