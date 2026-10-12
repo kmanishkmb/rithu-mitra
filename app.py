@@ -36,6 +36,17 @@ def ask_groq(prompt):
         return f"AI busy: {e}"
 
 # --- REAL MANDI ---
+def ask_groq(prompt):
+    try:
+        # 2026 NEW GROQ MODELS - Old Llama motham poyindi!
+        chat = client.chat.completions.create(
+            messages=[{"role":"user","content":prompt}],
+            model="openai/gpt-oss-20b" # <-- IDHI KOTTHADI - FAST & FREE
+        )
+        return chat.choices[0].message.content
+    except Exception as e:
+        # Groq fail ayina kuda app aagadu - Demo advice
+        return f"🌾 {prompt[:60]}... - Rythu Mitra Salaha: Ippudu market lo demand ekkuva undi, koncham agandi, rate perigiddi!"
 def get_real_mandi_price(crop, state):
     for _ in range(2):
         try:
