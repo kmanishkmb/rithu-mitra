@@ -66,7 +66,15 @@ with t1:
         if st.button("✨ Rogam Chusi Mandu Cheppu", key="b1"):
             with st.spinner("AI Doctor chustunnadu..."):
                 # Qwen code ikkada
-                client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+                # client = Groq(api_key=st.secrets["GROQ_API_KEY"])  <- old line delete
+
+# Kotha safe code:
+try:
+    api_key = st.secrets["GROQ_API_KEY"]
+    client = Groq(api_key=api_key)
+except:
+    st.error("⚠️ GROQ_API_KEY Secrets lo pettalevu! Settings -> Secrets lo pettu")
+    st.stop()
                 #... nee old Qwen code same
                 st.success("Cheeku mukka tegulu - Copper Oxychloride spray chey!")
 
